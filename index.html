@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>만다라트 · 나의 목표 설계도</title>
+<style>
+  :root{
+    --ink:#1a1a2e;
+    --paper:#f6f4ee;
+    --line:#d8d3c6;
+    --core:#e8541c;        /* 중심 목표 — 주홍 */
+    --core-soft:#fce7de;
+    --branch:#2a6f6b;      /* 세부 목표 — 청록 */
+    --branch-soft:#d9ebe9;
+    --leaf:#ffffff;        /* 실천 항목 */
+    --muted:#8a8578;
+    --shadow:rgba(30,25,15,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;}
+  body{min-height:100vh;padding:28px 16px 80px;}
+  .wrap{max-width:940px;margin:0 auto;}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;margin-bottom:8px;}
+  .brand h1{font-size:clamp(22px,4vw,34px);font-weight:800;letter-spacing:-.02em;}
+  .brand .en{font-size:12px;letter-spacing:.35em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .tools{display:flex;gap:8px;flex-wrap:wrap}
+  button{font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+    border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);
+    padding:9px 14px;border-radius:999px;transition:.15s;white-space:nowrap}
+  button:hover{background:var(--ink);color:var(--paper)}
+  button.primary{background:var(--core);border-color:var(--core);color:#fff}
+  button.primary:hover{background:#c33f0d;border-color:#c33f0d}
+  button.ghost{border-color:var(--line)}
+
+  .status{font-size:12px;color:var(--muted);margin:6px 2px 20px;height:16px;font-weight:600}
+  .status b{color:var(--branch)}
+
+  /* 9x9 grid built from nine 3x3 blocks */
+  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .block{display:grid;grid-template-columns:repeat(3,1fr);
+    background:var(--line);gap:2px;border-radius:10px;overflow:hidden;
+    box-shadow:0 4px 14px var(--shadow);}
+  .cell{aspect-ratio:1/1;background:var(--leaf);border:none;
+    font-family:inherit;font-size:clamp(9px,1.5vw,12px);font-weight:600;
+    color:var(--ink);overflow:hidden;transition:background .15s;width:100%;
+    display:flex;align-items:center;justify-content:center;padding:5px 4px;
+    position:relative}
+  .cell-text{outline:none;text-align:center;line-height:1.25;width:100%;
+    word-break:break-word;overflow-wrap:anywhere;cursor:text;
+    max-height:100%;overflow:hidden}
+  .cell-text:empty:before{content:attr(data-ph);color:#c7c2b4;font-weight:500}
+  .cell:focus-within{background:#fffdf7;box-shadow:inset 0 0 0 2px var(--branch)}
+
+  /* central goal (whole board center + each block center) */
+  .cell.core{background:var(--core);color:#fff;font-weight:800}
+  .cell.core .cell-text:empty:before{color:rgba(255,255,255,.65)}
+  .cell.core:focus-within{background:#c33f0d;box-shadow:inset 0 0 0 2px #fff}
+
+  /* sub-goals: center-block ring + surrounding-block centers */
+  .cell.branch{background:var(--branch-soft);color:var(--branch);font-weight:800}
+  .cell.branch:focus-within{background:#fff}
+
+  footer{margin-top:22px;font-size:12px;color:var(--muted);line-height:1.7}
+  footer .legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .title-input{border:none;background:transparent;font:inherit;font-weight:800;
+    font-size:clamp(18px,3.4vw,26px);color:var(--ink);width:100%;padding:2px 0;
+    border-bottom:2px dashed transparent;outline:none;margin-top:2px}
+  .title-input:focus{border-bottom-color:var(--line)}
+
+  /* cell todo indicator */
+  .cell .badge{position:absolute;top:2px;right:3px;font-size:8px;font-weight:800;
+    line-height:1;padding:2px 4px;border-radius:999px;background:var(--branch);
+    color:#fff;pointer-events:none}
+  .cell.core .badge{background:#fff;color:var(--core)}
+
+  /* right slide-in panel */
+  .overlay{position:fixed;inset:0;background:rgba(20,16,8,.35);opacity:0;
+    visibility:hidden;transition:.2s;z-index:40}
+  .overlay.open{opacity:1;visibility:visible}
+  .panel{position:fixed;top:0;right:0;height:100%;width:min(400px,90vw);
+    background:var(--paper);box-shadow:-8px 0 30px rgba(30,25,15,.2);
+    transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+    z-index:50;display:flex;flex-direction:column}
+  .panel.open{transform:translateX(0)}
+  .panel-head{padding:22px 22px 16px;border-bottom:1.5px solid var(--line)}
+  .panel-head .kicker{font-size:11px;letter-spacing:.25em;text-transform:uppercase;
+    color:var(--muted);font-weight:800;margin-bottom:8px}
+  .panel-head .goal{font-size:19px;font-weight:800;letter-spacing:-.01em;
+    line-height:1.35;word-break:break-word}
+  .panel-head .goal.empty{color:var(--muted);font-weight:600}
+  .panel-close{position:absolute;top:16px;right:16px;width:32px;height:32px;
+    border-radius:50%;border:1.5px solid var(--line);background:var(--paper);
+    font-size:16px;line-height:1;padding:0;display:grid;place-items:center}
+  .progress{padding:12px 22px 0;font-size:12px;font-weight:700;color:var(--branch)}
+  .progbar{height:6px;border-radius:999px;background:var(--line);margin:8px 22px 4px;
+    overflow:hidden}
+  .progbar>i{display:block;height:100%;background:var(--branch);width:0;
+    transition:width .25s;border-radius:999px}
+  .todo-list{flex:1;overflow-y:auto;padding:12px 14px 20px}
+
+  /* detail note */
+  .note-wrap{padding:14px 22px 4px}
+  .note-label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--muted);font-weight:800;margin-bottom:7px}
+  .note{width:100%;min-height:64px;max-height:200px;resize:vertical;font:inherit;
+    font-size:14px;font-weight:500;line-height:1.55;color:var(--ink);
+    background:#fff;border:1.5px solid var(--line);border-radius:10px;
+    padding:11px 12px;outline:none}
+  .note:focus{border-color:var(--branch)}
+  .note::placeholder{color:#b8b3a5;font-weight:500}
+  .divider{height:1.5px;background:var(--line);margin:16px 22px 0}
+  .section-label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--muted);font-weight:800;padding:16px 22px 0}
+  .todo{display:flex;align-items:flex-start;gap:10px;padding:9px 8px;border-radius:9px}
+  .todo:hover{background:#efece4}
+  .todo input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:0 0 auto;
+    width:20px;height:20px;border:2px solid var(--branch);border-radius:6px;
+    margin-top:1px;cursor:pointer;position:relative;transition:.15s}
+  .todo input[type=checkbox]:checked{background:var(--branch)}
+  .todo input[type=checkbox]:checked:after{content:"";position:absolute;left:5px;top:1px;
+    width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .todo .txt{flex:1;font-size:14px;line-height:1.4;font-weight:600;outline:none;
+    word-break:break-word;padding:1px 0}
+  .todo.done .txt{text-decoration:line-through;color:var(--muted);font-weight:500}
+  .todo .del{flex:0 0 auto;border:none;background:transparent;color:var(--muted);
+    font-size:16px;padding:0 4px;cursor:pointer;opacity:0;transition:.15s}
+  .todo:hover .del{opacity:1}
+  .todo .del:hover{color:var(--core)}
+  .add-row{display:flex;gap:8px;padding:12px 18px 18px;border-top:1.5px solid var(--line)}
+  .add-row input{flex:1;font:inherit;font-size:14px;font-weight:600;padding:10px 12px;
+    border:1.5px solid var(--line);border-radius:9px;background:#fff;outline:none}
+  .add-row input:focus{border-color:var(--branch)}
+  .add-row button{flex:0 0 auto}
+  .empty-note{text-align:center;color:var(--muted);font-size:13px;padding:30px 20px;
+    font-weight:600;line-height:1.6}
+
+  @media(max-width:560px){body{padding:18px 8px 60px}.board{gap:6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand" style="flex:1;min-width:220px">
+      <div class="en">Mandalart</div>
+      <input class="title-input" id="docTitle" placeholder="무제 만다라트" maxlength="40">
+    </div>
+    <div class="tools">
+      <button class="ghost" onclick="clearBoard()">비우기</button>
+      <button class="ghost" onclick="exportFile()">내보내기</button>
+      <button class="ghost" onclick="document.getElementById('imp').click()">불러오기</button>
+      <input type="file" id="imp" accept=".json" hidden onchange="importFile(event)">
+      <button class="primary" onclick="save()">지금 저장</button>
+    </div>
+  </header>
+
+  <div class="status" id="status">가운데 주황 칸에 핵심 목표를, 그 주위 8칸에 세부 목표를 적어보세요.</div>
+
+  <div class="board" id="board"></div>
+
+  <footer>
+    <div class="legend">
+      <span class="chip"><span class="dot" style="background:var(--core)"></span>핵심 목표</span>
+      <span class="chip"><span class="dot" style="background:var(--branch-soft);border:1px solid var(--branch)"></span>세부 목표 (8개)</span>
+      <span class="chip"><span class="dot" style="background:#fff;border:1px solid var(--line)"></span>실천 항목</span>
+    </div>
+    입력하는 즉시 이 브라우저에 자동 저장됩니다. 칸을 <b>더블클릭</b>하면 그 목표의 할 일 목록을 열 수 있어요. 백업하려면 <b>내보내기</b>를 쓰세요.
+  </footer>
+</div>
+
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<aside class="panel" id="panel" aria-label="할 일 목록">
+  <button class="panel-close" onclick="closePanel()" aria-label="닫기">✕</button>
+  <div class="panel-head">
+    <div class="kicker" id="panelKicker">To-do</div>
+    <div class="goal" id="panelGoal"></div>
+  </div>
+  <div class="note-wrap">
+    <div class="note-label">상세 내용</div>
+    <textarea class="note" id="panelNote" placeholder="이 목표에 대한 메모, 배경, 아이디어를 자유롭게 적어보세요…"></textarea>
+  </div>
+  <div class="section-label">할 일 목록</div>
+  <div class="progress" id="panelProgress"></div>
+  <div class="progbar"><i id="panelBar"></i></div>
+  <div class="todo-list" id="todoList"></div>
+  <div class="add-row">
+    <input id="todoInput" placeholder="할 일 추가…" maxlength="120">
+    <button class="primary" onclick="addTodo()">추가</button>
+  </div>
+</aside>
+
+<script>
+const KEY = "mandalart-v1";
+// 9 blocks (0=top-left ... 4=center ... 8=bottom-right), each 9 cells.
+// Center block(4) center(4) = 핵심목표. Center block ring maps to the 8 surrounding block centers.
+const ringToBlock = {0:0,1:1,2:2,3:3,5:5,6:6,7:7,8:8}; // center-block cell idx -> surrounding block idx
+
+let data = blankData();
+function blankData(){ return { title:"동훈이의 1000억 회사", cells: Array.from({length:9},()=>Array(9).fill("")), todos:{}, notes:{} }; }
+
+const board = document.getElementById("board");
+const statusEl = document.getElementById("status");
+const titleEl = document.getElementById("docTitle");
+
+// build DOM
+const inputs = []; // inputs[block][cell]
+for(let b=0;b<9;b++){
+  const blk=document.createElement("div"); blk.className="block";
+  inputs[b]=[];
+  for(let c=0;c<9;c++){
+    const ta=document.createElement("div");
+    ta.className="cell";
+    const span=document.createElement("span"); span.className="cell-text";
+    span.contentEditable="true";
+    if(b===4 && c===4){ ta.classList.add("core"); span.dataset.ph="핵심 목표"; }
+    else if(b===4){ ta.classList.add("branch"); span.dataset.ph="세부 목표"; }
+    else if(c===4){ ta.classList.add("branch"); }        // surrounding block centers
+    span.addEventListener("input",()=>onInput(b,c,span.textContent));
+    span.addEventListener("compositionend",()=>onInput(b,c,span.textContent));
+    span.addEventListener("keydown",e=>{
+      if(e.key==="Enter" && !e.isComposing && e.keyCode!==229){ e.preventDefault(); span.blur(); }
+    });
+    ta.addEventListener("dblclick",()=>openPanel(b,c));
+    const badge=document.createElement("span"); badge.className="badge"; badge.style.display="none";
+    ta.appendChild(span); ta.appendChild(badge);
+    ta._badge=badge; ta._span=span;
+    inputs[b][c]=ta; blk.appendChild(ta);
+  }
+  board.appendChild(blk);
+}
+
+function onInput(b,c,val){
+  data.cells[b][c]=val;
+  // sync: center-block ring <-> surrounding block centers
+  if(b===4 && c in ringToBlock){
+    const tb=ringToBlock[c];
+    data.cells[tb][4]=val;
+    inputs[tb][4]._span.textContent=val;
+    updateBadge(tb,4);
+  } else if(c===4 && b!==4){
+    // surrounding center -> center-block ring
+    const ringIdx=Object.keys(ringToBlock).find(k=>ringToBlock[k]===b);
+    if(ringIdx!==undefined){ data.cells[4][ringIdx]=val; inputs[4][ringIdx]._span.textContent=val; updateBadge(4,ringIdx); }
+  }
+  // keep open panel's title in sync
+  if(activeKey===key(b,c) && panel.classList.contains("open")) setPanelGoal(val);
+  markDirty();
+}
+
+let dirty=false;
+function markDirty(){
+  dirty=true;
+  save(); // 실시간 저장
+}
+
+function render(){
+  titleEl.value=data.title||"";
+  for(let b=0;b<9;b++)for(let c=0;c<9;c++){
+    inputs[b][c]._span.textContent=data.cells[b][c]||"";
+    updateBadge(b,c);
+  }
+}
+
+function save(){
+  data.title=titleEl.value;
+  try{
+    localStorage.setItem(KEY, JSON.stringify({...data, savedAt:Date.now()}));
+    dirty=false;
+    const t=new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    statusEl.innerHTML=`<b>자동 저장됨</b> · ${t}`;
+  }catch(e){ statusEl.textContent="저장 실패: 저장 공간을 확인하세요."; }
+}
+
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){ const p=JSON.parse(raw); data={title:p.title||"동훈이의 1000억 회사",cells:p.cells||blankData().cells,todos:p.todos||{},notes:p.notes||{}}; render(); statusEl.textContent="저장된 만다라트를 불러왔어요."; }
+  }catch(e){}
+}
+
+function clearBoard(){
+  if(!confirm("모든 칸을 비웁니다. 계속할까요?")) return;
+  data=blankData(); titleEl.value=""; render(); save();
+  statusEl.textContent="새 만다라트를 시작합니다.";
+}
+
+function exportFile(){
+  data.title=titleEl.value;
+  const name=(data.title||"mandalart").replace(/[\\/:*?"<>|]/g,"_");
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name+".json"; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importFile(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const p=JSON.parse(r.result);
+    data={title:p.title||"",cells:(p.cells&&p.cells.length===9)?p.cells:blankData().cells,todos:p.todos||{},notes:p.notes||{}};
+    render(); save(); statusEl.textContent="파일을 불러왔어요.";
+  }catch(e){ alert("올바른 만다라트 파일이 아닙니다."); } };
+  r.readAsText(f); ev.target.value="";
+}
+
+titleEl.addEventListener("input",markDirty);
+window.addEventListener("beforeunload",e=>{ if(dirty){ save(); } });
+
+/* ---------- To-do panel ---------- */
+const overlay=document.getElementById("overlay");
+const panel=document.getElementById("panel");
+const panelGoal=document.getElementById("panelGoal");
+const panelKicker=document.getElementById("panelKicker");
+const todoListEl=document.getElementById("todoList");
+const panelNote=document.getElementById("panelNote");
+const todoInput=document.getElementById("todoInput");
+const panelProgress=document.getElementById("panelProgress");
+const panelBar=document.getElementById("panelBar");
+let activeKey=null;
+
+function key(b,c){ return b+"-"+c; }
+function getTodos(k){ return data.todos[k] || (data.todos[k]=[]); }
+
+function roleLabel(b,c){
+  if(b===4&&c===4) return "핵심 목표";
+  if((b===4)||(c===4)) return "세부 목표";
+  return "실천 항목";
+}
+
+function openPanel(b,c){
+  activeKey=key(b,c);
+  const goal=data.cells[b][c]||"";
+  panelKicker.textContent=roleLabel(b,c)+" · 할 일";
+  setPanelGoal(goal);
+  panelNote.value = data.notes[activeKey] || "";
+  renderTodos();
+  overlay.classList.add("open");
+  panel.classList.add("open");
+  setTimeout(()=>todoInput.focus(),260);
+}
+function closePanel(){
+  overlay.classList.remove("open");
+  panel.classList.remove("open");
+  activeKey=null;
+}
+function setPanelGoal(goal){
+  if(goal && goal.trim()){ panelGoal.textContent=goal; panelGoal.classList.remove("empty"); }
+  else { panelGoal.textContent="(제목 없는 칸)"; panelGoal.classList.add("empty"); }
+}
+
+function renderTodos(){
+  if(!activeKey) return;
+  const list=getTodos(activeKey);
+  todoListEl.innerHTML="";
+  if(list.length===0){
+    const n=document.createElement("div"); n.className="empty-note";
+    n.textContent="아직 할 일이 없어요.\n아래에 첫 할 일을 적어보세요.";
+    n.style.whiteSpace="pre-line";
+    todoListEl.appendChild(n);
+  } else {
+    list.forEach((item,i)=>todoListEl.appendChild(todoRow(item,i)));
+  }
+  const done=list.filter(t=>t.done).length;
+  panelProgress.textContent=list.length? `${done} / ${list.length} 완료` : "";
+  panelBar.style.width=list.length? (done/list.length*100)+"%" : "0%";
+  if(activeKey){ const [b,c]=activeKey.split("-").map(Number); updateBadge(b,c); }
+}
+
+function todoRow(item,i){
+  const row=document.createElement("div");
+  row.className="todo"+(item.done?" done":"");
+  const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=item.done;
+  cb.addEventListener("change",()=>{ item.done=cb.checked; markDirty(); renderTodos(); });
+  const txt=document.createElement("div"); txt.className="txt"; txt.contentEditable="true";
+  txt.textContent=item.text;
+  txt.addEventListener("input",()=>{ item.text=txt.textContent; markDirty(); });
+  txt.addEventListener("keydown",e=>{ if(e.key==="Enter" && !e.isComposing && e.keyCode!==229){ e.preventDefault(); txt.blur(); } });
+  const del=document.createElement("button"); del.className="del"; del.textContent="🗑"; del.title="삭제";
+  del.addEventListener("click",()=>{ getTodos(activeKey).splice(i,1); markDirty(); renderTodos(); });
+  row.append(cb,txt,del);
+  return row;
+}
+
+function addTodo(){
+  if(!activeKey) return;
+  const v=todoInput.value.trim();
+  if(!v) return;
+  getTodos(activeKey).push({text:v,done:false});
+  todoInput.value="";
+  markDirty(); renderTodos();
+  todoInput.focus();
+}
+todoInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter" && !e.isComposing && e.keyCode!==229){ e.preventDefault(); addTodo(); }
+});
+panelNote.addEventListener("input",()=>{
+  if(!activeKey) return;
+  const v=panelNote.value;
+  if(v.trim()==="") delete data.notes[activeKey];
+  else data.notes[activeKey]=v;
+  markDirty();
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePanel(); });
+
+function updateBadge(b,c){
+  const cell=inputs[b][c]; if(!cell||!cell._badge) return;
+  const list=data.todos[key(b,c)]||[];
+  if(list.length===0){ cell._badge.style.display="none"; return; }
+  const done=list.filter(t=>t.done).length;
+  cell._badge.textContent=`${done}/${list.length}`;
+  cell._badge.style.display="";
+}
+
+load();
+</script>
+</body>
+</html>
